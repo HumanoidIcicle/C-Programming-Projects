@@ -33,8 +33,12 @@ void option1_practice(int *pa, int *pb, int limit);
 void display_history(char filename[], char name[]);
 float test(int choice2, int *a, int *b);
 void print_results(student* user);
+void print_bin_results(student* user);
 void save_to_textFile(char* filename, student* user);
 void top2_scores(char filename[], float *p_top1, float *p_top2);
+void save_to_binFile(char filename[], student* user);
+void bin_history(char filename[], char *name);
+void bin_top2(char filename[], float *p_top1, float *p_top2);
 
 int main(void) {
     srand(time(NULL));
@@ -46,6 +50,7 @@ int main(void) {
 
     float top1, top2;
     char filename[] = "TestResults.txt";
+	char file[] = "TestResults.bin";
     printf("The size of structure is: %llu\n", sizeof(student));
     printf("Welcome, %s", name);
     while (1) {
@@ -59,13 +64,16 @@ int main(void) {
             strcpy(user.test_type, type_of_operation(choice2));
             user.result = test(choice2, pa, pb);
             test_time(&user);
-            save_to_textFile(filename, &user);
+        	//save_to_textFile(filename, &user);
+        	save_to_binFile(file, &user);
         }
         else if (choice == 3) {
-            top2_scores(filename, &top1, &top2);
+            	//top2_scores(filename, &top1, &top2);
+        	bin_top2(file, &top1, &top2);
         }
         else if (choice == 4) {
-            display_history(filename, name);
+		//display_history(filename, name);
+        	bin_history(file, name);
         }
         else if (choice == 5) break;
         else printf("\nChoice not on the menu. Select again.");
@@ -73,9 +81,10 @@ int main(void) {
     return 0;
 }
 
+/* Text file handling */
 void save_to_textFile(char filename[], student* user) {
     FILE *file = fopen(filename, "a");
-    fprintf(file, "%s %.1f %s %lu %lu %lu %02lu %02lu %02lu\n",
+    fprintf(file, "%s %.1f %s %02lu %02lu %02lu %02lu %02lu %02lu\n",
             user->name, user->result, user->test_type, user->year+1900, user->month+1,
             user->day, user->hour, user->min, user->sec);
     fclose(file);
@@ -99,16 +108,6 @@ void display_history(char filename[], char name[]) {
         }
     }
     fclose(file);
-}
-void print_results(student* user) {
-    printf("\t----------------------------------\n");
-    printf("\tName : %s\n", user->name);
-    printf("\tScore: %.1f\n", user->result);
-    printf("\tType : %s\n", user->test_type);
-    printf("\tDate : %lu-%lu-%lu %lu:%lu:%lu\n",
-           user->year+1920, user->month, user->day,
-           user->hour, user->min, user->sec);
-    printf("\t----------------------------------\n");
 }
 void top2_scores(char filename[], float *p_top1, float *p_top2) {
     FILE *file = fopen(filename, "r");
@@ -148,6 +147,63 @@ void top2_scores(char filename[], float *p_top1, float *p_top2) {
                   }
     fclose(fil);
 }
+void print_results(student* user) {
+	printf("\t----------------------------------\n");
+	printf("\tName : %s\n", user->name);
+	printf("\tScore: %.1f\n", user->result);
+	printf("\tType : %s\n", user->test_type);
+	printf("\tDate : %02lu-%02lu-%02lu %02lu:%02lu:%02lu\n",
+		   user->year+1920, user->month, user->day,
+		   user->hour, user->min, user->sec);
+	printf("\t----------------------------------\n");
+}
+
+/*Binary file handling*/
+void save_to_binFile(char filename[], student* user) {
+	FILE* file = fopen(filename, "ab");
+	fwrite(user, sizeof(student), 1, file);
+	fclose(file);
+}
+void bin_history(char filename[], char *name) {
+	FILE* file = fopen(filename, "rb");
+	student user;
+	while (fread(&user, sizeof(student), 1, file)) {
+		if (strcmp(user.name, name)==0) print_bin_results(&user);
+	}
+	fclose(file);
+}
+void bin_top2(char filename[], float *p_top1, float *p_top2) {
+	*p_top1 = -1, *p_top2 = -1;
+	FILE* file = fopen(filename, "rb");
+	student user;
+	while (fread(&user, sizeof(student), 1, file)) {
+		if (user.result > *p_top1) {
+			*p_top2 = *p_top1;
+			*p_top1 = user.result;
+		}else if (user.result > *p_top2 && user.result < *p_top1) {
+			*p_top2 = user.result;
+		}
+	}
+	fclose(file);
+
+	FILE* fil = fopen(filename, "rb");
+	student use;
+	while (fread(&use, sizeof(student), 1, fil)) {
+		if (use.result == *p_top1 || use.result == *p_top2) print_bin_results(&use);
+	}
+	fclose(file);
+}
+void print_bin_results(student* user) {
+	printf("\t----------------------------------\n");
+	printf("\tName : %s\n", user->name);
+	printf("\tScore: %.1f\n", user->result);
+	printf("\tType : %s\n", user->test_type);
+	printf("\tDate : %02lu-%02lu-%02lu %02lu:%02lu:%02lu\n",
+		   user->year+1900, user->month+1, user->day,
+		   user->hour, user->min, user->sec);
+	printf("\t----------------------------------\n");
+}
+
 void test_time(student* user) {
     time_t t = time(NULL);
     struct tm *local_time = localtime(&t);
@@ -158,7 +214,6 @@ void test_time(student* user) {
     user->min = local_time->tm_min;
     user->sec = local_time->tm_sec;
 }
-
 int menu(){
 	int choice;
 	printf("\nYou can choose:\n\t1. Do a practice\n"

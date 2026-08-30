@@ -18,7 +18,7 @@ typedef struct {
                         day:  5,
                         month:4,
                         year: 7;
-} student;
+}__attribute__ ((__packed__)) student; //to ask the compiler to have compact form in the memory allocation
 
 int menu();
 int menu2();
